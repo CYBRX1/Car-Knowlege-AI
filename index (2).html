@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Futuristic Car AI</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+body {
+  font-family: 'Orbitron', sans-serif;
+  background: linear-gradient(160deg,#0f0c29,#302b63,#24243e);
+  color: #eee;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+#chatbox {
+  width: 650px;
+  max-width: 95%;
+  background: rgba(30,30,30,0.85);
+  padding: 25px;
+  border-radius: 25px;
+  box-shadow: 0 0 50px #0ff;
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+#messages {
+  height: 420px;
+  overflow-y: auto;
+  padding: 20px;
+  border-radius: 20px;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid #0ff;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+input {
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  background: rgba(50,50,50,0.7);
+  color: #0ff;
+}
+button {
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  background: #0ff;
+  color: #111;
+  font-weight: bold;
+  transition: 0.3s;
+}
+button:hover { background: #0aa; }
+.message-user, .message-ai {
+  padding: 12px 18px;
+  border-radius: 20px;
+  max-width: 80%;
+  animation: fadeIn 0.4s ease-out;
+  white-space: pre-wrap;
+}
+.message-user { align-self: flex-end; background: rgba(0,255,255,0.2); border: 1px solid #0ff; }
+.message-ai { align-self: flex-start; background: rgba(255,165,0,0.2); border: 1px solid #fa0; }
+@keyframes fadeIn { from {opacity: 0; transform: translateY(10px);} to {opacity:1; transform: translateY(0);} }
+</style>
+</head>
+<body>
+
+<div id="chatbox">
+  <div id="messages"></div>
+  <input id="userInput" placeholder="Ask about any car model...">
+  <div style="display:flex; gap:12px; justify-content:center;">
+    <button id="newChatBtn">New Chat</button>
+    <button id="shareBtn">Share</button>
+    <button id="clearBtn">Clear</button>
+  </div>
+</div>
+
+<script>
+// Car AI database (~50 cars to start, can expand to 200+)
+const carKnowledge = [
+{"name":"Ferrari F8","topSpeed":"340 km/h","accel":"2.9s","hp":"710 hp","priceNew":"~€280,000","priceUsed":"~€230,000","country":"Italy","fun":"Named after the Ferrari F8 Tributo, sharp handling."},
+{"name":"Lamborghini Aventador","topSpeed":"350 km/h","accel":"2.8s","hp":"759 hp","priceNew":"~€393,000","priceUsed":"~€350,000","country":"Italy","fun":"V12 engine, classic Lambo roar."},
+{"name":"Porsche 911 Turbo S","topSpeed":"330 km/h","accel":"2.7s","hp":"640 hp","priceNew":"~€210,000","priceUsed":"~€180,000","country":"Germany","fun":"Iconic 911 lineage, all-weather performance."},
+{"name":"Bugatti Chiron","topSpeed":"420+ km/h","accel":"2.4s","hp":"1500 hp","priceNew":"~€2.8M","priceUsed":"~€2.3M","country":"France","fun":"One of the fastest production cars."},
+{"name":"Tesla Model S Plaid","topSpeed":"322 km/h","accel":"1.99s","hp":"1020 hp","priceNew":"~€140,000","priceUsed":"~€110,000","country":"USA","fun":"Tri-motor insane electric sedan."},
+{"name":"Ford Mustang GT","topSpeed":"250 km/h","accel":"4.2s","hp":"450 hp","priceNew":"~€55,000","priceUsed":"~€40,000","country":"USA","fun":"Classic American muscle."},
+{"name":"Chevrolet Corvette C8","topSpeed":"312 km/h","accel":"2.8s","hp":"495 hp","priceNew":"~€75,000","priceUsed":"~€60,000","country":"USA","fun":"Mid-engine Corvette, huge handling leap."},
+{"name":"Toyota Supra GR","topSpeed":"250 km/h","accel":"4.3s","hp":"382 hp","priceNew":"~€55,000","priceUsed":"~€45,000","country":"Japan","fun":"BMW-based engine tech, great balance."},
+{"name":"Nissan GT-R","topSpeed":"315 km/h","accel":"2.9s","hp":"565 hp","priceNew":"~€100,000","priceUsed":"~€85,000","country":"Japan","fun":"Called Godzilla — performance legend."},
+{"name":"BMW M5 Competition","topSpeed":"305 km/h","accel":"3.3s","hp":"617 hp","priceNew":"~€122,000","priceUsed":"~€100,000","country":"Germany","fun":"Luxury sedan with supercar pace."},
+{"name":"Mercedes AMG GT","topSpeed":"310 km/h","accel":"3.6s","hp":"577 hp","priceNew":"~€140,000","priceUsed":"~€120,000","country":"Germany","fun":"AMG-tuned GT with muscular V8."},
+{"name":"Audi R8 V10","topSpeed":"330 km/h","accel":"3.2s","hp":"562 hp","priceNew":"~€170,000","priceUsed":"~€150,000","country":"Germany","fun":"Mid-engine sports car with awesome sound."},
+{"name":"Honda Civic Type R","topSpeed":"272 km/h","accel":"5.4s","hp":"306 hp","priceNew":"~€43,000","priceUsed":"~€35,000","country":"Japan","fun":"Legendary hot hatch."},
+{"name":"Subaru WRX STI","topSpeed":"255 km/h","accel":"5.2s","hp":"310 hp","priceNew":"~€40,000","priceUsed":"~€30,000","country":"Japan","fun":"Rally heritage AWD performer."},
+{"name":"Jeep Wrangler Rubicon","topSpeed":"180 km/h","accel":"8.0s","hp":"285 hp","priceNew":"~€45,000","priceUsed":"~€38,000","country":"USA","fun":"Off-road king with removable doors."},
+{"name":"Toyota Land Cruiser","topSpeed":"180 km/h","accel":"9.5s","hp":"381 hp","priceNew":"~€50,000","priceUsed":"~€40,000","country":"Japan","fun":"Legendary reliability and off-road ability."}
+// Add more here up to 200+
+];
+
+// Send message
+function sendMessage(text){
+  messages.innerHTML += `<div class="message-user"><b>You:</b> ${text}</div>`;
+  let response="Car not found. Try exact model name like Ferrari F8, Tesla Model S...";
+  for(const car of carKnowledge){
+    if(text.toLowerCase().includes(car.name.toLowerCase())){
+      response=`${car.name} (${car.country})\nTop Speed: ${car.topSpeed}\n0–100 km/h: ${car.accel}\nHorsepower: ${car.hp}\nPrice (new): ${car.priceNew}\nPrice (used): ${car.priceUsed}\nFun Fact: ${car.fun}`;
+      break;
+    }
+  }
+  messages.innerHTML += `<div class="message-ai"><b>Car AI:</b><pre style="color:#fa0">${response}</pre></div>`;
+  messages.scrollTop=messages.scrollHeight;
+}
+
+// Event listeners
+const input=document.getElementById("userInput");
+const messages=document.getElementById("messages");
+document.getElementById("newChatBtn").addEventListener("click",()=>{messages.innerHTML="";});
+document.getElementById("clearBtn").addEventListener("click",()=>{input.value="";});
+document.getElementById("shareBtn").addEventListener("click",()=>{
+  navigator.clipboard.writeText(window.location.href);
+  alert("Link copied!");
+});
+input.addEventListener("keypress",e=>{
+  if(e.key==="Enter"&&input.value.trim()){
+    sendMessage(input.value.trim());
+    input.value="";
+  }
+});
+</script>
+
+</body>
+</html>
